@@ -2,13 +2,19 @@ import pandas as pd
 from bs4 import BeautifulSoup as bs
 import requests
 import json
+try:
+	site = 'https://www.ukclimbing.com/logbook/crags/battleship_back_cliff-265/'
+	results = requests.get(site)
+	soup = bs(results.content, 'html.parser')
+	print("connection established")
 
-site = 'https://www.ukclimbing.com/logbook/crags/battleship_back_cliff-265/'
-results = requests.get(site)
-soup = bs(results.content, 'html.parser')
+except Exception as e:
+	print(f"{e}")
+
+
 scripts = soup.find_all('script')
 climb_table = scripts[10].string
-
+print("finding data")
 start_keyword = 'table_data = ['
 start_index = climb_table.find(start_keyword) + len('table_data = ')
 open_brackets = 0
@@ -24,7 +30,7 @@ while True:
         end_index = i + 1
         break
     i += 1
-
+print("accessing json")
 json_data = climb_table[start_index:end_index]
 climbs = json.loads(json_data)
 climbs_df = pd.DataFrame(climbs)
@@ -55,6 +61,7 @@ for outer_key, outer_value in grades.items():
             for k, v in alt_data.items():
                 row[f'alt_{k}'] = v
         grades_list.append(row)
+print("pushing to df")
 grades_df = pd.DataFrame(grades_list)
 
 climbs_w_grades = pd.merge(
