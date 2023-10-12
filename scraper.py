@@ -3,11 +3,21 @@ from bs4 import BeautifulSoup as bs
 import requests
 import json
 
-site = 'https://www.ukclimbing.com/logbook/crags/battleship_back_cliff-265/'
-results = requests.get(site)
-soup = bs(results.content, 'html.parser')
-scripts = soup.find_all('script')
-climb_table = scripts[10].string
+def pop
+
+try:
+    next_id = open("crag_ids.txt", "r").readline
+    site = f"https://www.ukclimbing.com/logbook/crag.php?id={next_id}"
+    results = requests.get(site)
+
+
+    soup = bs(results.content, 'html.parser')
+    print(soup)
+    scripts = soup.find_all('script')
+    print(scripts)
+    climb_table = scripts[10].string
+except Exception as e:
+
 
 start_keyword = 'table_data = ['
 start_index = climb_table.find(start_keyword) + len('table_data = ')

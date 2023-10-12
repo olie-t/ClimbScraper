@@ -13,7 +13,8 @@ with open('crag_ids.txt', 'r') as f:
     last_line = lines[-1]
 
 KNOWNID = int(last_line)
-MAX_ATTEMPTS = 1000
+MAX_ATTEMPTS = 50
+
 
 valid_ids = [KNOWNID]
 errors_in_a_row = 0
