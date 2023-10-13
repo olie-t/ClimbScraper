@@ -1,0 +1,4 @@
+Encounted error - "['alt_id', 'alt_name'] not found in axis" while processing crag  id 266
+Encounted error - "['alt_id', 'alt_name'] not found in axis" while processing crag  id 268
+Encounted error - "['alt_id', 'alt_name'] not found in axis" while processing crag  id 269
+Encounted error - "['alt_id', 'alt_name'] not found in axis" while processing crag  id 270

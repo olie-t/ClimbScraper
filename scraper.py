@@ -74,4 +74,12 @@ try:
 except Exception as e:
     with open('error_log.txt', 'a') as log_file:
         log_file.write(f"Encounted error - {e} while processing crag  id {crag_id}")
+    print(e)
+
+finally:
+    with open("crag_ids.txt", "r+") as crag_file:
+        crags = crag_file.readlines()
+        crag_file.seek(0)
+        crag_file.truncate()
+        crag_file.writelines(crags[1:])
 
