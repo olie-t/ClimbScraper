@@ -65,7 +65,7 @@ try:
 
     climbs_w_grades = pd.merge(
         filtered_climbs_df, grades_df, left_on='grade', right_on='id')
-    climbs_w_grades.drop(['grade', 'gradesystem_x', 'id_y', 'gradesystem_y', 'score', 'gradecolor', 'alt_id', 'alt_name'], axis=1, inplace=True)
+    climbs_w_grades.drop(['grade', 'gradesystem_x', 'id_y', 'gradesystem_y', 'score', 'gradecolor', 'alt_id', 'alt_name'], axis=1, inplace=True, errors="ignore")
     climbs_w_grades.rename(columns={'id_x': 'climb_id', 'name_x': 'climb_name', 'name_y': 'climb_grade'}, inplace=True)
     climbs_w_grades = climbs_w_grades[['climb_id', 'climb_name', 'climb_grade', 'techgrade', 'gradescore', 'gradetype']]
     with pd.option_context('display.max_rows', None,
