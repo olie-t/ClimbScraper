@@ -4,7 +4,7 @@ import requests
 import json
 from sqlalchemy import create_engine
 from Connection_test import connection_string
-def CLimb_scrape():
+def climb_scrape():
     try:
         with open('crag_ids.txt', 'r') as crag_file:
             crag_id = crag_file.readline()
@@ -87,4 +87,4 @@ def CLimb_scrape():
             crag_file.truncate()
             crag_file.writelines(crags[1:])
 
-CLimb_scrape()
+climb_scrape()
