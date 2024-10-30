@@ -1,6 +1,6 @@
 import requests
 import json
-import bs4 as bs
+from bs4 import BeautifulSoup as bs
 import pandas as pd
 from pandas.core.interchange import dataframe
 
@@ -32,6 +32,7 @@ def get_data(url: str) -> json:
         if response.status_code == 200 and is_valid_crag_page(response.content):
             return response
         else:
+            print("Response was not valid")
             return None
     except Exception as e:
         print(f"Get Data request failed with error:\n{e}")
@@ -53,6 +54,7 @@ def string_processor_climbs(data: str) -> json:
     """Find the relevant data for the climbs at this crag"""
 
     start_keyword = 'table_data = ['
+    start_index = 0
     try:
         start_index = data.find(start_keyword) + len(start_keyword)
         i = start_index
@@ -78,7 +80,9 @@ def string_processor_climbs(data: str) -> json:
 
 def climbs_dataframe_creation(data: json) -> dataframe:
     """Takes the climb data in json and returns it in a dataframe with only the relveant information"""
+    print(data)
     climbs_data = json.loads(data)
+    print(climbs_data)
     climbs_dataframe = pd.DataFrame(climbs_data)
     climbs_dataframe_filtered = climbs_dataframe.filter(['id', 'name', 'grade', 'techgrade', 'gradesystem',
                                                          'gradetype', 'gradescore'], axis=1)

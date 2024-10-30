@@ -6,6 +6,7 @@ if __name__ == '__main__':
     crag_id = get_crag_id("crag_ids.txt")
     print(f"Got crag_id: {crag_id}")
     crag_url = url_builder(crag_id)
+
     print(f"Got crag_url: {crag_url}")
     url_data = get_data(crag_url)
     if url_data == None:
