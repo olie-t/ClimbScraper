@@ -4,13 +4,35 @@ import bs4 as bs
 import pandas as pd
 from pandas.core.interchange import dataframe
 
+from scraper.list_builder import is_valid_crag_page
+
+
+def get_crag_id(txt_file: str) -> int:
+    """ Gets first crag id from text file"""
+    try:
+        with open(txt_file, 'r') as fin:
+            data = fin.read().splitlines(True)
+            crag_id = data[0]
+        with open(txt_file, 'w') as fout:
+            fout.writelines(data[1:])
+        return crag_id
+    except Exception as e:
+        print(f"Failed to get crag id from {txt_file} with error: \n{e}")
+
+def url_builder(crag_id:int) -> str:
+    """Generates a url from a crag ID"""
+    return f"https://www.ukclimbing.com/logbook/crag.php?id={crag_id}"
+
 
 def get_data(url: str) -> json:
     """Attempts to get data from the provided URL"""
 
     try:
         response = requests.get(url)
-        return response
+        if response.status_code == 200 and is_valid_crag_page(response.content):
+            return response
+        else:
+            return None
     except Exception as e:
         print(f"Get Data request failed with error:\n{e}")
 
@@ -32,7 +54,7 @@ def string_processor_climbs(data: str) -> json:
 
     start_keyword = 'table_data = ['
     try:
-        start_index = data.find(start_keyword) + len(start_keyword
+        start_index = data.find(start_keyword) + len(start_keyword)
         i = start_index
     except Exception as e:
         print(f'Unable to find start keyword in data string:\n{e}')
