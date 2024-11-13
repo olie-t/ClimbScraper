@@ -1,11 +1,24 @@
+from typing import Optional
+
 import requests
 import json
 from bs4 import BeautifulSoup as bs
 import pandas as pd
 from pandas.core.interchange import dataframe
-
+import random
+import time
 from scraper.list_builder import is_valid_crag_page
 
+def get_random_user_agent() -> str:
+    """Return a random user agent string"""
+    user_agents = [
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Edge/120.0.0.0 Safari/537.36',
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/121.0',
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15'
+    ]
+    return random.choice(user_agents)
 
 def get_crag_id(txt_file: str) -> int:
     """ Gets first crag id from text file"""
@@ -28,19 +41,42 @@ def url_builder(crag_id:int) -> str:
         return None
     return f"https://www.ukclimbing.com/logbook/crag.php?id={crag_id}"
 
-def get_data(url: str) -> json:
-    """Attempts to get data from the provided URL"""
 
-    if url is None:
-        return None
+def get_data(url: str) -> Optional[requests.Response]:
+    """Make requests appear more human-like"""
+    headers = {
+        'User-Agent': get_random_user_agent(),
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.5',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'DNT': '1',
+        'Connection': 'keep-alive',
+        'Upgrade-Insecure-Requests': '1'
+    }
 
     try:
-        response = requests.get(url)
-        if response.status_code == 200 and is_valid_crag_page(response.content):
+        time.sleep(random.uniform(3, 7))
+        session = requests.Session()
+        response = session.get(url, headers=headers)
+
+        # Check for various status codes
+        if response.status_code == 410:  # Gone
+            print(f"Page gone (410) for URL: {url}")
+            return None
+        elif response.status_code == 404:  # Not Found
+            print(f"Page not found (404) for URL: {url}")
+            return None
+        elif response.status_code != 200:  # Any other non-200 status
+            print(f"Unexpected status code {response.status_code} for URL: {url}")
+            return None
+
+        # Check if it's a valid crag page
+        if is_valid_crag_page(response.content):
             return response
         else:
-            print(f"Response was not valid for URL: {url}")
+            print(f"Not a valid crag page: {url}")
             return None
+
     except Exception as e:
         print(f"Get Data request failed with error:\n{e}")
         return None
