@@ -42,45 +42,91 @@ def url_builder(crag_id:int) -> str:
     return f"https://www.ukclimbing.com/logbook/crag.php?id={crag_id}"
 
 
+def is_valid_crag_url_page(content):
+    try:
+        # Try different encodings
+        for encoding in ['utf-8', 'iso-8859-1', 'windows-1252']:
+            try:
+                decoded_content = content.decode(encoding)
+                soup = bs(decoded_content, 'html.parser')
+                title = soup.title.string if soup.title else ''
+                if 'UKC Logbook' in title:
+                    return True
+            except UnicodeDecodeError:
+                continue
+        return False
+    except Exception as e:
+        print(f"Error checking crag validity: {e}")
+        return False
+
+
 def get_data(url: str) -> Optional[requests.Response]:
-    """Make requests appear more human-like"""
+    """Make requests appear more human-like with better encoding handling"""
     headers = {
         'User-Agent': get_random_user_agent(),
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
         'Accept-Language': 'en-US,en;q=0.5',
-        'Accept-Encoding': 'gzip, deflate, br',
-        'DNT': '1',
+        'Accept-Encoding': 'gzip, deflate',  # Removed 'br' to avoid compression issues
         'Connection': 'keep-alive',
         'Upgrade-Insecure-Requests': '1'
     }
 
     try:
-        time.sleep(random.uniform(3, 7))
+        time.sleep(random.uniform(2, 5))
         session = requests.Session()
+
+        # Make the request with explicit encoding settings
         response = session.get(url, headers=headers)
+        response.encoding = 'utf-8'  # Force UTF-8 encoding
 
-        # Check for various status codes
-        if response.status_code == 410:  # Gone
-            print(f"Page gone (410) for URL: {url}")
-            return None
-        elif response.status_code == 404:  # Not Found
-            print(f"Page not found (404) for URL: {url}")
-            return None
-        elif response.status_code != 200:  # Any other non-200 status
-            print(f"Unexpected status code {response.status_code} for URL: {url}")
+        if response.status_code != 200:
+            print(f"HTTP error {response.status_code} for URL: {url}")
             return None
 
-        # Check if it's a valid crag page
-        if is_valid_crag_page(response.content):
+        # Add some debugging
+        print(f"\nChecking crag page: {url}")
+        print(f"Response encoding: {response.encoding}")
+        print(f"Content type: {response.headers.get('content-type', 'unknown')}")
+
+        if is_valid_crag_url_page(response.content):
             return response
         else:
-            print(f"Not a valid crag page: {url}")
+            # Let's see what we actually got
+            soup = bs(response.content, 'html.parser')
+            title = soup.title.string if soup.title else 'No title found'
+            print(f"Page title: {title}")
+            print("Not a valid crag page")
             return None
 
     except Exception as e:
-        print(f"Get Data request failed with error:\n{e}")
+        print(f"Request failed with error:\n{e}")
         return None
 
+
+def verify_crag(crag_id: int):
+    """Debug function to verify a specific crag"""
+    url = f"https://www.ukclimbing.com/logbook/crag.php?id={crag_id}"
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+    }
+
+    response = requests.get(url, headers=headers)
+    print(f"\nVerifying crag {crag_id}")
+    print(f"Status code: {response.status_code}")
+    print(f"Encoding: {response.encoding}")
+    print(f"Content type: {response.headers.get('content-type')}")
+
+    soup = bs(response.content, 'html.parser')
+    print(f"Title: {soup.title.string if soup.title else 'No title'}")
+
+    # Check for common page elements
+    route_table = soup.find('table', {'class': 'routes'})
+    if route_table:
+        print("Found routes table")
+        routes = route_table.find_all('tr')
+        print(f"Number of routes: {len(routes) - 1}")  # -1 for header row
+
+    return response.content
 
 def data_to_string(data: json) -> str:
     """Processes the raw response into a string for processing"""

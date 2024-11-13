@@ -1,8 +1,10 @@
 import random
 
+from sqlalchemy.engine import cursor
+
 from climb_scraper.scraper.scraper_functions import get_crag_id, url_builder, get_data, data_to_string, \
     string_processor_climbs, climbs_dataframe_creation, string_processor_grades, grades_dataframe_creation, \
-    climbs_grades_dataframe_merge
+    climbs_grades_dataframe_merge, verify_crag
 from data.database import ClimbingDatabase
 from scraper.list_builder import populate_ids_list
 import time
@@ -29,6 +31,15 @@ def main():
 
     failed_attempts = {}
     MAX_RETRIES = 3
+
+    # Check database state before starting
+    db.verify_database_state()
+
+    first_crag = db.get_next_unprocessed_crag_id()
+    if first_crag:
+        print("\nVerifying first unprocessed crag:")
+        verify_crag(first_crag)
+
 
     while True:
         # Get processing statistics
@@ -84,13 +95,6 @@ def main():
         else:
             failed_attempts[crag_id] = failed_attempts.get(crag_id, 0) + 1
 
-        # Insert data into database
-        if db.insert_crag(crag_id) and db.insert_climbs(climb_dataframe, crag_id):
-            print(f"Successfully processed crag {crag_id}")
-            db.mark_crag_processed(crag_id, success=True)
-        else:
-            print(f"Failed to store data for crag {crag_id}")
-            db.mark_crag_processed(crag_id, success=False)
 
         # Add delay to avoid overwhelming the server
         base_delay = random.uniform(2, 5)  # Base delay between 2-5 seconds

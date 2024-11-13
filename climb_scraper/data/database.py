@@ -5,12 +5,17 @@ from typing import Optional, List, Tuple
 
 
 class ClimbingDatabase:
-    def __init__(self, db_path: str = "climbing_data.db"):
+    def __init__(self, db_path: str = None):
         """Initialize database connection and create tables if they don't exist"""
-        self.db_path = db_path
+        if db_path is None:
+            import os
+            # Get the project root directory
+            project_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+            self.db_path = os.path.join(project_root, "climbing_data.db")
+        else:
+            self.db_path = db_path
         self.conn = None
         self.create_tables()
-
     def connect(self):
         """Create a database connection"""
         try:
@@ -229,3 +234,31 @@ class ClimbingDatabase:
         except sqlite3.Error as e:
             print(f"Error resetting database: {e}")
             return False
+
+    def verify_database_state(self):
+        """Print current database state"""
+        try:
+            conn = self.connect()
+            if conn:
+                cursor = conn.cursor()
+
+                # Get counts
+                cursor.execute("SELECT COUNT(*) FROM crag_ids")
+                total_ids = cursor.fetchone()[0]
+
+                cursor.execute("SELECT COUNT(*) FROM crag_ids WHERE processed = 1")
+                processed = cursor.fetchone()[0]
+
+                cursor.execute("SELECT MIN(crag_id), MAX(crag_id) FROM crag_ids")
+                min_max = cursor.fetchone()
+
+                print("\n=== Database Status ===")
+                print(f"Total crag IDs: {total_ids}")
+                print(f"Processed: {processed}")
+                print(f"Unprocessed: {total_ids - processed}")
+                print(f"ID range: {min_max[0]} to {min_max[1]}")
+                print("=====================\n")
+
+                self.close()
+        except Exception as e:
+            print(f"Error verifying database state: {e}")
