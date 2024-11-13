@@ -1,4 +1,6 @@
-def get_crag_id():
+
+
+def get_crag_id(txt_file: str) -> int:
     pass
 
 

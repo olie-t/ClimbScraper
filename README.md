@@ -1,6 +1,13 @@
 Climb Stats Web Scraper Project
 =====
+### Scope changes
 
+Since orginal inception the scope of this project has massively changed. Originally I wanted to use AWS as a learning tool as I was aiming for a more data focused career and wanted exposure to cloud tech. However I have since changed roles, and am now working as a DBA using azure cloud and SQL on prem. As such I have decided to instead use SQLite as my database, and move on to create some visualisations locally. 
+
+I would still like to eventually have this as a website that is able to respond to user queries to provide infomation on climbing in the UK and Europe. However as my goals have changed in general, it seems more beneficial to get a "MVP" version up and running. If for no other reason then to keep me motivated to work on this project. 
+
+
+_orginal readme maintained below_
 #### Why this project?
 
 This project was born from conversations from freinds of mine on a climbing trip. 
