@@ -12,81 +12,154 @@ def get_crag_id(txt_file: str) -> int:
     try:
         with open(txt_file, 'r') as fin:
             data = fin.read().splitlines(True)
-            crag_id = data[0]
+            if not data:  # Check if file is empty
+                return None
+            crag_id = data[0].strip()
         with open(txt_file, 'w') as fout:
             fout.writelines(data[1:])
-        return crag_id
+        return int(crag_id)
     except Exception as e:
         print(f"Failed to get crag id from {txt_file} with error: \n{e}")
+        return None
 
 def url_builder(crag_id:int) -> str:
     """Generates a url from a crag ID"""
+    if crag_id is None:
+        return None
     return f"https://www.ukclimbing.com/logbook/crag.php?id={crag_id}"
-
 
 def get_data(url: str) -> json:
     """Attempts to get data from the provided URL"""
+
+    if url is None:
+        return None
 
     try:
         response = requests.get(url)
         if response.status_code == 200 and is_valid_crag_page(response.content):
             return response
         else:
-            print("Response was not valid")
+            print(f"Response was not valid for URL: {url}")
             return None
     except Exception as e:
         print(f"Get Data request failed with error:\n{e}")
+        return None
 
 
 def data_to_string(data: json) -> str:
     """Processes the raw response into a string for processing"""
+    if data is None:
+        return None
 
     try:
         soup = bs(data.content, 'html.parser')
         scripts = soup.find_all('script')
-        climb_table_string = scripts[10].string
-        return climb_table_string
+
+        # Look specifically for the script containing table_data
+        table_data = None
+        for script in scripts:
+            if script.string and 'table_data = ' in script.string:
+                # Get the whole script content
+                table_data = script.string.strip()
+                break
+
+        if table_data is None:
+            print("Could not find table_data in scripts")
+            return None
+
+        return table_data
     except Exception as e:
         print(f"Data processor request failed with error:\n{e}")
-
+        return None
 
 def string_processor_climbs(data: str) -> json:
     """Find the relevant data for the climbs at this crag"""
-
-    start_keyword = 'table_data = ['
-    start_index = 0
-    try:
-        start_index = data.find(start_keyword) + len(start_keyword)
-        i = start_index
-    except Exception as e:
-        print(f'Unable to find start keyword in data string:\n{e}')
-    open_brackets = 0
-    closed_brackets = 0
+    if data is None:
+        return None
 
     try:
-        while True:
-            if data[i] == '[':
-                open_brackets += 1
-            elif data[i] == ']':
-                closed_brackets += 1
-            if open_brackets == closed_brackets and open_brackets != 0:
-                end_index = i + 1
-                break
-            i += 1
-        json_data = data[start_index:end_index]
-        return json_data
+        start_keyword = 'table_data = '
+        start_index = data.find(start_keyword)
+        if start_index == -1:
+            print('Unable to find climb data in page')
+            return None
+
+        start_index += len(start_keyword)
+
+        # Find the semicolon that terminates the JavaScript statement
+        end_index = data.find('\n', start_index)
+        if end_index == -1:
+            end_index = data.find(';', start_index)
+        if end_index == -1:
+            print('Unable to find end of table_data')
+            return None
+
+        # Extract the raw JSON string
+        json_str = data[start_index:end_index].strip()
+
+        # Remove any trailing commas that might cause JSON parsing errors
+        json_str = json_str.rstrip(',')
+
+        # Remove any trailing semicolons
+        json_str = json_str.rstrip(';')
+
+        # Test parse the JSON
+        try:
+            json.loads(json_str)
+            return json_str
+        except json.JSONDecodeError as e:
+            print(f"Invalid JSON format: {e}")
+            print("First 100 characters of extracted data:", json_str[:100])
+            # Debug output to help identify issues
+            print("Last 50 characters:", json_str[-50:])
+            return None
+
     except Exception as e:
-        print(f'String processing failed to correctly determine the bounds of the json with error:\n{e}')
+        print(f'String processing failed with error:\n{e}')
+        print("Data string preview:", data[:200] if data else "None")
+        return None
+
 
 def climbs_dataframe_creation(data: json) -> dataframe:
-    """Takes the climb data in json and returns it in a dataframe with only the relveant information"""
-    print(data)
-    climbs_data = json.loads(data)
-    print(climbs_data)
-    climbs_dataframe = pd.DataFrame(climbs_data)
-    climbs_dataframe_filtered = climbs_dataframe.filter(['id', 'name', 'grade', 'techgrade', 'gradesystem',
-                                                         'gradetype', 'gradescore'], axis=1)
-    return climbs_dataframe_filtered
+    """Takes the climb data in json and returns it in a dataframe with only the relevant information"""
+    if data is None:
+        return None
+
+    try:
+        # Parse the JSON data
+        climbs_data = json.loads(data)
+
+        # Ensure we have a list of climb data
+        if not isinstance(climbs_data, list):
+            print("Climbs data is not in expected list format")
+            return None
+
+        if not climbs_data:  # Check if the data is empty
+            print("No climbs data found in JSON")
+            return None
+
+        # Create dataframe
+        climbs_dataframe = pd.DataFrame(climbs_data)
+
+        # Check for required columns
+        required_columns = ['id', 'name', 'grade', 'techgrade', 'gradesystem', 'gradetype', 'gradescore']
+        missing_columns = [col for col in required_columns if col not in climbs_dataframe.columns]
+        if missing_columns:
+            print(f"Missing required columns: {missing_columns}")
+            return None
+
+        # Filter columns
+        climbs_dataframe_filtered = climbs_dataframe[required_columns]
+        return climbs_dataframe_filtered
+
+    except json.JSONDecodeError as e:
+        print(f'JSON parsing error: {e}')
+        print("Problematic JSON:", data[:200])
+        return None
+    except Exception as e:
+        print(f'Failed to create climbs dataframe with error:\n{e}')
+        print("Data type:", type(data))
+        return None
 
 def string_processor_grades(data: str) -> json:
     """Find the relevant data for the grades at this crag"""
